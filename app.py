@@ -56,7 +56,7 @@ answers: dict[str, str] = {}
 for idx, (key, question) in enumerate(GEJALA_QUESTIONS.items()):
     with col1 if idx % 2 == 0 else col2:
         label = f"{key} - {question}"
-        value = st.radio(label, options=["YA", "TIDAK"], horizontal=True)
+        value = st.radio(label, options=["TIDAK", "YA"], index=0, horizontal=True)
         answers[key] = value
 
 st.markdown("### 2) Input Riwayat")
@@ -65,7 +65,7 @@ col3, col4 = st.columns(2)
 for idx, (key, question) in enumerate(RIWAYAT_QUESTIONS.items()):
     with col3 if idx % 2 == 0 else col4:
         label = f"{key} - {question}"
-        value = st.radio(label, options=["PERNAH", "TIDAK_PERNAH"], horizontal=True)
+        value = st.radio(label, options=["TIDAK_PERNAH", "PERNAH"], index=0, horizontal=True)
         answers[key] = value
 
 if st.button("Jalankan Inferensi", type="primary"):
