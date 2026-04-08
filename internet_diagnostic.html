@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NetInsight | Diagnosa Internet & Jaringan Rumah</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    boxShadow: {
+                        soft: "0 12px 36px -18px rgba(15, 23, 42, 0.38)",
+                    },
+                    animation: {
+                        float: "float 7s ease-in-out infinite",
+                    },
+                    keyframes: {
+                        float: {
+                            "0%, 100%": { transform: "translateY(0px)" },
+                            "50%": { transform: "translateY(-6px)" },
+                        },
+                    },
+                },
+            },
+        };
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: "Inter", system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+            background:
+                radial-gradient(950px 650px at 5% 0%, rgba(56, 189, 248, 0.16), transparent 60%),
+                radial-gradient(900px 520px at 95% 5%, rgba(99, 102, 241, 0.16), transparent 60%),
+                linear-gradient(140deg, #0b1220 0%, #111827 55%, #0f172a 100%);
+            min-height: 100vh;
+        }
+
+        .glass {
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            background: linear-gradient(
+                150deg,
+                rgba(255, 255, 255, 0.12),
+                rgba(255, 255, 255, 0.06)
+            );
+            border: 1px solid rgba(255, 255, 255, 0.16);
+        }
+
+        .slide-in {
+            animation: fadeSlide 260ms ease;
+        }
+
+        @keyframes fadeSlide {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="text-slate-100 antialiased">
+    <main class="mx-auto flex min-h-screen w-full max-w-5xl items-center px-4 py-8 sm:px-6 lg:px-8">
+        <section class="glass shadow-soft w-full overflow-hidden rounded-3xl">
+            <header class="relative border-b border-white/10 px-6 py-7 sm:px-10 sm:py-9">
+                <div class="pointer-events-none absolute inset-0 opacity-35">
+                    <svg class="h-full w-full" viewBox="0 0 1200 280" fill="none">
+                        <path d="M0 190C150 140 300 225 450 180C600 135 760 220 910 170C1040 130 1100 180 1200 145" stroke="url(#line)" stroke-width="2" stroke-linecap="round"/>
+                        <defs>
+                            <linearGradient id="line" x1="0" y1="0" x2="1200" y2="0" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#22D3EE"/>
+                                <stop offset="0.55" stop-color="#60A5FA"/>
+                                <stop offset="1" stop-color="#A78BFA"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+                <div class="relative flex items-start justify-between gap-4">
+                    <div>
+                        <div class="mb-3 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-400/10 px-3 py-1 text-xs font-semibold tracking-wide text-cyan-200">
+                            <span class="inline-block h-2 w-2 animate-pulse rounded-full bg-cyan-300"></span>
+                            Asisten Diagnosa Jaringan
+                        </div>
+                        <h1 class="text-2xl font-extrabold tracking-tight sm:text-3xl">NetInsight Console</h1>
+                        <p class="mt-2 max-w-2xl text-sm text-slate-300 sm:text-base">
+                            Diagnosa gangguan WiFi dan internet rumah dengan alur pertanyaan bertahap berbasis inferensi forward chaining.
+                        </p>
+                    </div>
+                    <div class="hidden rounded-2xl border border-white/10 bg-white/5 p-3 sm:block">
+                        <div class="animate-float text-3xl">📡</div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="px-6 py-7 sm:px-10 sm:py-9">
+                <section id="questionSection" class="space-y-6">
+                    <div class="flex items-center justify-between gap-4">
+                        <p id="progressText" class="text-sm font-medium text-slate-300">Pertanyaan 1 dari 8</p>
+                        <p id="questionCode" class="text-xs font-semibold uppercase tracking-wider text-cyan-200">Gejala · G1</p>
+                    </div>
+
+                    <div class="h-2 w-full overflow-hidden rounded-full bg-slate-800/70">
+                        <div id="progressFill" class="h-full rounded-full bg-gradient-to-r from-cyan-400 via-blue-500 to-violet-500 transition-all duration-300" style="width: 12.5%;"></div>
+                    </div>
+
+                    <button id="backBtn" onclick="goBack()" class="hidden inline-flex items-center gap-2 rounded-xl border border-slate-600/70 bg-slate-800/70 px-4 py-2 text-sm font-medium text-slate-200 transition hover:border-cyan-300/50 hover:text-cyan-200">
+                        <span>←</span>
+                        <span>Kembali</span>
+                    </button>
+
+                    <div id="questionContainer" class="slide-in rounded-2xl border border-white/10 bg-slate-900/45 p-5 sm:p-7">
+                        <p id="questionNumber" class="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-cyan-200/90">Pertanyaan Gejala 1</p>
+                        <h2 id="questionText" class="text-xl font-semibold leading-relaxed text-slate-100 sm:text-2xl"></h2>
+                    </div>
+
+                    <div id="optionsContainer" class="grid gap-3 sm:gap-4"></div>
+                </section>
+
+                <section id="resultSection" class="hidden space-y-5">
+                    <div class="rounded-2xl border border-cyan-300/20 bg-gradient-to-br from-cyan-500/20 via-blue-500/20 to-violet-500/20 p-6">
+                        <p class="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-200">Hasil Diagnosa</p>
+                        <h2 id="diagnosisResult" class="mt-3 text-2xl font-extrabold text-white sm:text-3xl"></h2>
+                        <p id="diagnosisDetail" class="mt-4 rounded-xl border border-white/10 bg-slate-900/40 p-4 text-sm leading-7 text-slate-200 sm:text-base"></p>
+                    </div>
+
+                    <div class="grid gap-4 md:grid-cols-2">
+                        <div class="rounded-2xl border border-white/10 bg-slate-900/45 p-5">
+                            <p class="mb-3 text-sm font-semibold text-cyan-200">Ringkasan Fakta Turunan</p>
+                            <div class="space-y-2 text-sm text-slate-200">
+                                <p><span class="font-semibold text-slate-100">Level Gejala:</span> <span id="gejalaSummary"></span></p>
+                                <p><span class="font-semibold text-slate-100">Status Riwayat:</span> <span id="riwayatSummary"></span></p>
+                            </div>
+                        </div>
+                        <div class="rounded-2xl border border-white/10 bg-slate-900/45 p-5">
+                            <p class="mb-3 text-sm font-semibold text-cyan-200">Ringkasan Sesi</p>
+                            <div class="space-y-2 text-sm text-slate-200">
+                                <p><span class="font-semibold text-slate-100">Jawaban Terisi:</span> <span id="answeredCount"></span></p>
+                                <p><span class="font-semibold text-slate-100">Rule Terpicu:</span> <span id="firedCount"></span></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="rounded-2xl border border-white/10 bg-slate-900/45 p-5">
+                        <p class="mb-4 text-sm font-semibold text-cyan-200">Jejak Inferensi</p>
+                        <div id="rulesPath" class="space-y-3"></div>
+                    </div>
+
+                    <button onclick="restart()" class="w-full rounded-xl bg-gradient-to-r from-cyan-500 via-blue-500 to-violet-500 px-4 py-3.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/20 transition hover:brightness-110">
+                        Mulai Diagnosa Baru
+                    </button>
+                </section>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const GEJALA_QUESTIONS = {
+            G1: "Tidak bisa terhubung ke WiFi / SSID tidak terdeteksi.",
+            G2: "Koneksi internet sering putus-putus atau tidak stabil.",
+            G3: "Kecepatan internet sangat lambat.",
+            G4: "Muncul error DNS / situs web tidak dapat dibuka.",
+            G5: "Semua perangkat di jaringan terdampak.",
+            G6: "Lampu indikator router merah atau router mati.",
+        };
+
+        const RIWAYAT_QUESTIONS = {
+            H1: "Ada riwayat perubahan konfigurasi router atau DNS.",
+            H2: "Ada laporan gangguan ISP di area Anda.",
+        };
+
+        const DIAGNOSIS_DETAILS = {
+            "Masalah Perangkat Pengguna": "Biasanya hanya satu perangkat yang bermasalah. Coba restart perangkat, perbarui driver WiFi, lalu forget dan hubungkan ulang jaringan.",
+            "Masalah Konfigurasi Jaringan": "Perubahan konfigurasi kemungkinan memengaruhi pengaturan DNS/IP. Kembalikan ke DHCP otomatis dan verifikasi konfigurasi DNS.",
+            "Masalah Router / Access Point": "Gangguan kemungkinan pada perangkat jaringan lokal. Coba restart router, update firmware, dan cek kepadatan kanal WiFi.",
+            "Gangguan ISP Ringan": "Ada indikasi gangguan dari sisi ISP namun belum total. Gunakan DNS publik sementara lalu laporkan ke ISP.",
+            "Kerusakan Hardware": "Gejala berat tanpa indikasi gangguan area ISP. Periksa modem/router dan pertimbangkan penggantian perangkat.",
+            "Gangguan ISP Masif": "Kemungkinan besar gangguan berasal dari provider. Koordinasikan dengan ISP/NOC dan tunggu pemulihan layanan.",
+        };
+
+        const RULES = {
+            gejala: [
+                { id: "R7", conditions: { G6: "YES" }, conclusion: ["GEJALA", "BERAT"], description: "Jika router merah/mati maka gejala berat." },
+                { id: "R8", conditions: { G4: "NO", G5: "NO", G6: "NO" }, conclusion: ["GEJALA", "RINGAN"], description: "Tanpa DNS issue, tidak massal, router normal." },
+                { id: "R9", conditions: { G4: "YES", G5: "NO", G6: "NO" }, conclusion: ["GEJALA", "SEDANG"], description: "Ada DNS issue lokal, gejala sedang." },
+                { id: "R10", conditions: { G1: "NO", G2: "NO", G3: "NO", G5: "YES", G6: "NO" }, conclusion: ["GEJALA", "SEDANG"], description: "Semua perangkat terdampak tanpa G1/G2/G3." },
+                { id: "R11", conditions: { G1: "YES", G5: "YES", G6: "NO" }, conclusion: ["GEJALA", "BERAT"], description: "Tidak bisa konek dan berdampak massal." },
+                { id: "R12", conditions: { G1: "NO", G2: "YES", G5: "YES", G6: "NO" }, conclusion: ["GEJALA", "BERAT"], description: "Koneksi putus-putus secara massal." },
+                { id: "R13", conditions: { G1: "NO", G2: "NO", G3: "YES", G5: "YES", G6: "NO" }, conclusion: ["GEJALA", "BERAT"], description: "Sangat lambat dan berdampak massal." },
+            ],
+            riwayat: [
+                { id: "R14", conditions: { H1: "NEVER", H2: "NEVER" }, conclusion: ["RIWAYAT", "OK"], description: "Tidak ada riwayat perubahan dan gangguan area." },
+                { id: "R15", conditions: { H1: "YES" }, conclusion: ["RIWAYAT", "NOT_OK"], description: "Ada riwayat perubahan konfigurasi." },
+                { id: "R16", conditions: { H2: "YES" }, conclusion: ["RIWAYAT", "NOT_OK"], description: "Ada riwayat gangguan ISP area." },
+            ],
+            target: [
+                { id: "R1", conditions: { GEJALA: "RINGAN", RIWAYAT: "OK" }, conclusion: ["DIAGNOSA", "Masalah Perangkat Pengguna"], description: "Gejala ringan + riwayat OK." },
+                { id: "R2", conditions: { GEJALA: "RINGAN", RIWAYAT: "NOT_OK" }, conclusion: ["DIAGNOSA", "Masalah Konfigurasi Jaringan"], description: "Gejala ringan + riwayat NOT_OK." },
+                { id: "R3", conditions: { GEJALA: "SEDANG", RIWAYAT: "OK" }, conclusion: ["DIAGNOSA", "Masalah Router / Access Point"], description: "Gejala sedang + riwayat OK." },
+                { id: "R4", conditions: { GEJALA: "SEDANG", RIWAYAT: "NOT_OK" }, conclusion: ["DIAGNOSA", "Gangguan ISP Ringan"], description: "Gejala sedang + riwayat NOT_OK." },
+                { id: "R5", conditions: { GEJALA: "BERAT", RIWAYAT: "OK" }, conclusion: ["DIAGNOSA", "Kerusakan Hardware"], description: "Gejala berat + riwayat OK." },
+                { id: "R6", conditions: { GEJALA: "BERAT", RIWAYAT: "NOT_OK" }, conclusion: ["DIAGNOSA", "Gangguan ISP Masif"], description: "Gejala berat + riwayat NOT_OK." },
+            ],
+        };
+
+        let currentQuestionIndex = 0;
+        let answers = {};
+        let firedRules = [];
+        let allQuestions = [];
+        let facts = {};
+
+        function initializeQuestions() {
+            allQuestions = [];
+            Object.keys(GEJALA_QUESTIONS).forEach((key) => {
+                allQuestions.push({ key, text: GEJALA_QUESTIONS[key], type: "gejala" });
+            });
+            Object.keys(RIWAYAT_QUESTIONS).forEach((key) => {
+                allQuestions.push({ key, text: RIWAYAT_QUESTIONS[key], type: "riwayat" });
+            });
+        }
+
+        function makeOptionButton(option, key) {
+            const button = document.createElement("button");
+            button.className = "w-full rounded-xl border border-white/10 bg-slate-900/45 px-4 py-4 text-left transition hover:-translate-y-0.5 hover:border-cyan-300/40 hover:bg-slate-800/65 focus:outline-none focus:ring-2 focus:ring-cyan-300/50";
+            button.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <div class="flex h-9 w-9 items-center justify-center rounded-lg ${option.value === "YES" ? "bg-emerald-500/20 text-emerald-300" : "bg-rose-500/20 text-rose-300"}">
+                        ${option.icon}
+                    </div>
+                    <div>
+                        <p class="text-sm font-semibold text-slate-100">${option.label}</p>
+                        <p class="text-xs text-slate-400">${option.sub}</p>
+                    </div>
+                </div>
+            `;
+            button.onclick = () => selectAnswer(key, option.value);
+            return button;
+        }
+
+        function displayQuestion() {
+            const question = allQuestions[currentQuestionIndex];
+            const isGejala = question.type === "gejala";
+            const gejalaIdx = Object.keys(GEJALA_QUESTIONS).indexOf(question.key) + 1;
+            const riwayatIdx = Object.keys(RIWAYAT_QUESTIONS).indexOf(question.key) + 1;
+
+            document.getElementById("progressText").textContent = `Pertanyaan ${currentQuestionIndex + 1} dari ${allQuestions.length}`;
+            document.getElementById("questionCode").textContent = isGejala ? `Gejala · ${question.key}` : `Riwayat · ${question.key}`;
+            document.getElementById("progressFill").style.width = `${((currentQuestionIndex + 1) / allQuestions.length) * 100}%`;
+            document.getElementById("questionNumber").textContent = isGejala ? `Pertanyaan Gejala ${gejalaIdx}` : `Pertanyaan Riwayat ${riwayatIdx}`;
+            document.getElementById("questionText").textContent = question.text;
+
+            const backBtn = document.getElementById("backBtn");
+            backBtn.classList.toggle("hidden", currentQuestionIndex === 0);
+
+            const optionsContainer = document.getElementById("optionsContainer");
+            optionsContainer.innerHTML = "";
+
+            const options = isGejala
+                ? [
+                    { value: "YES", label: "Ya", sub: "Gejala ini dialami.", icon: "✓" },
+                    { value: "NO", label: "Tidak", sub: "Gejala ini tidak dialami.", icon: "✕" },
+                ]
+                : [
+                    { value: "YES", label: "Pernah", sub: "Ada riwayat terkait.", icon: "✓" },
+                    { value: "NEVER", label: "Tidak Pernah", sub: "Tidak ada riwayat terkait.", icon: "✕" },
+                ];
+
+            options.forEach((option) => optionsContainer.appendChild(makeOptionButton(option, question.key)));
+
+            const questionContainer = document.getElementById("questionContainer");
+            questionContainer.classList.remove("slide-in");
+            void questionContainer.offsetWidth;
+            questionContainer.classList.add("slide-in");
+        }
+
+        function selectAnswer(key, value) {
+            answers[key] = value;
+            if (currentQuestionIndex < allQuestions.length - 1) {
+                currentQuestionIndex += 1;
+                displayQuestion();
+            } else {
+                runDiagnosis();
+            }
+        }
+
+        function goBack() {
+            if (currentQuestionIndex <= 0) return;
+            currentQuestionIndex -= 1;
+            const previousKey = allQuestions[currentQuestionIndex].key;
+            delete answers[previousKey];
+            displayQuestion();
+        }
+
+        function checkRule(rule, currentFacts) {
+            for (const [key, value] of Object.entries(rule.conditions)) {
+                if (currentFacts[key] !== value) return false;
+            }
+            return true;
+        }
+
+        function runInference(rules, currentFacts) {
+            let changed = true;
+            const localFired = [];
+            while (changed) {
+                changed = false;
+                for (const rule of rules) {
+                    if (checkRule(rule, currentFacts)) {
+                        const [key, value] = rule.conclusion;
+                        if (!currentFacts[key]) {
+                            currentFacts[key] = value;
+                            localFired.push({
+                                id: rule.id,
+                                description: rule.description,
+                                conditions: { ...rule.conditions },
+                                conclusion: rule.conclusion,
+                            });
+                            changed = true;
+                        }
+                    }
+                }
+            }
+            return localFired;
+        }
+
+        function runDiagnosis() {
+            facts = { ...answers };
+            firedRules = [];
+            firedRules.push(...runInference(RULES.gejala, facts));
+            firedRules.push(...runInference(RULES.riwayat, facts));
+            firedRules.push(...runInference(RULES.target, facts));
+            displayResults();
+        }
+
+        function displayResults() {
+            const diagnosis = facts.DIAGNOSA || "Belum dapat ditentukan";
+            document.getElementById("diagnosisResult").textContent = diagnosis;
+            document.getElementById("diagnosisDetail").textContent = DIAGNOSIS_DETAILS[diagnosis] || "Belum ada rekomendasi detail.";
+            document.getElementById("gejalaSummary").textContent = facts.GEJALA || "-";
+            document.getElementById("riwayatSummary").textContent = facts.RIWAYAT || "-";
+            document.getElementById("answeredCount").textContent = `${Object.keys(answers).length} / ${allQuestions.length}`;
+            document.getElementById("firedCount").textContent = `${firedRules.length}`;
+
+            const rulesPath = document.getElementById("rulesPath");
+            rulesPath.innerHTML = "";
+
+            if (!firedRules.length) {
+                const p = document.createElement("p");
+                p.className = "text-sm text-slate-300";
+                p.textContent = "Tidak ada rule inferensi yang terpicu.";
+                rulesPath.appendChild(p);
+            } else {
+                firedRules.forEach((rule, idx) => {
+                    const card = document.createElement("article");
+                    card.className = "rounded-xl border border-white/10 bg-slate-950/50 p-4";
+                    const conditions = Object.entries(rule.conditions).map(([k, v]) => `${k}=${v}`).join(" DAN ");
+                    const [conclusionKey, conclusionValue] = rule.conclusion;
+                    card.innerHTML = `
+                        <p class="text-xs font-semibold uppercase tracking-wider text-cyan-200">Langkah ${idx + 1} · ${rule.id}</p>
+                        <p class="mt-2 text-sm text-slate-200"><span class="font-semibold text-slate-100">JIKA</span> ${conditions}</p>
+                        <p class="mt-1 text-sm text-slate-200"><span class="font-semibold text-slate-100">MAKA</span> ${conclusionKey} = ${conclusionValue}</p>
+                        <p class="mt-2 text-xs text-slate-400">${rule.description}</p>
+                    `;
+                    rulesPath.appendChild(card);
+                });
+            }
+
+            document.getElementById("questionSection").classList.add("hidden");
+            document.getElementById("resultSection").classList.remove("hidden");
+        }
+
+        function restart() {
+            currentQuestionIndex = 0;
+            answers = {};
+            firedRules = [];
+            facts = {};
+            document.getElementById("resultSection").classList.add("hidden");
+            document.getElementById("questionSection").classList.remove("hidden");
+            displayQuestion();
+        }
+
+        window.onload = () => {
+            initializeQuestions();
+            displayQuestion();
+        };
+    </script>
+</body>
+</html>
