@@ -17,6 +17,24 @@ RIWAYAT_QUESTIONS = {
     "H2": "Riwayat laporan gangguan ISP di area",
 }
 
+CF_USER_SCALE = [
+    ("Pasti", 1.0),
+    ("Hampir Pasti", 0.8),
+    ("Kemungkinan Besar", 0.6),
+    ("Mungkin", 0.4),
+    ("Sedikit Yakin", 0.2),
+    ("Tidak Tahu / Tidak", 0.0),
+]
+
+GEJALA_MB_WEIGHTS = {
+    "G1": 0.8,
+    "G2": 0.6,
+    "G3": 0.5,
+    "G4": 0.7,
+    "G5": 0.9,
+    "G6": 1.0,
+}
+
 DIAGNOSIS_DETAILS = {
     "Masalah Perangkat Pengguna": (
         "Biasanya hanya satu perangkat bermasalah. "
