@@ -20,6 +20,12 @@ def _format_fact_lines(facts: dict[str, str]) -> list[str]:
     return [f"{key}={value}" for key, value in sorted(facts.items())]
 
 
+def _format_working_memory(facts: dict[str, str], order: list[str]) -> str:
+    if not order:
+        return "-"
+    return ", ".join([f"{key}={facts[key]}" for key in order])
+
+
 def _summarize_derived_facts(facts: dict[str, str]) -> dict[str, str]:
     return {
         "GEJALA": facts.get("GEJALA", "-"),
@@ -61,6 +67,139 @@ def _build_fired_timeline(initial_facts: dict[str, str], output) -> list[dict[st
         )
 
     return timeline
+
+
+def _describe_rule_check(rule, facts: dict[str, str], status: str) -> str:
+    parts = []
+    for idx, (key, expected) in enumerate(rule.conditions.items(), start=1):
+        actual = facts.get(key)
+        if actual == expected:
+            parts.append(f"{rule.rule_id} (Premis {idx}) memenuhi")
+        else:
+            parts.append(f"{rule.rule_id} (Premis {idx}) tidak memenuhi")
+
+    if status == "FIRED":
+        parts.append(f"{rule.rule_id} firing")
+    elif status == "NOT_MET":
+        parts.append(f"Hapus {rule.rule_id} dari antrian")
+    elif status == "ALREADY_TRUE":
+        parts.append(f"{rule.rule_id} terpenuhi (fakta sudah ada)")
+    elif status == "ALREADY_FIRED":
+        parts.append(f"{rule.rule_id} sudah dieksekusi")
+    elif status == "CONFLICT":
+        parts.append(f"{rule.rule_id} konflik")
+
+    return ". ".join(parts)
+
+
+def _build_full_history_rows(initial_facts: dict[str, str]) -> list[dict[str, str]]:
+    facts: dict[str, str] = {}
+    memory_order: list[str] = []
+    rows: list[dict[str, str]] = []
+
+    for item in QUESTION_FLOW:
+        key = item["key"]
+        if key not in initial_facts:
+            continue
+        value = initial_facts[key]
+        facts[key] = value
+        if value in {"YA", "PERNAH"}:
+            memory_order.append(key)
+        ui_label = f"{key}? {item['question']}"
+        rows.append(
+            {
+                "User Interface": ui_label,
+                "Fakta Baru": f"{key}={value}",
+                "Rule": "-",
+                "Working Memory": _format_working_memory(facts, memory_order),
+            }
+        )
+
+    fired_rule_ids: set[str] = set()
+    changed = True
+    while changed:
+        changed = False
+        for rule in ALL_RULES:
+            if rule.rule_id in fired_rule_ids:
+                status = "ALREADY_FIRED"
+                rule_text = _describe_rule_check(rule, facts, status)
+                rows.append(
+                    {
+                        "User Interface": "-",
+                        "Fakta Baru": "-",
+                        "Rule": rule_text,
+                        "Working Memory": _format_working_memory(facts, memory_order),
+                    }
+                )
+                continue
+
+            missing = []
+            for key, expected in rule.conditions.items():
+                actual = facts.get(key)
+                if actual != expected:
+                    missing.append(key)
+
+            if missing:
+                status = "NOT_MET"
+                rule_text = _describe_rule_check(rule, facts, status)
+                rows.append(
+                    {
+                        "User Interface": "-",
+                        "Fakta Baru": "-",
+                        "Rule": rule_text,
+                        "Working Memory": _format_working_memory(facts, memory_order),
+                    }
+                )
+                continue
+
+            target_fact, target_value = rule.conclusion
+            existing_value = facts.get(target_fact)
+
+            if existing_value is not None and existing_value != target_value:
+                status = "CONFLICT"
+                rule_text = _describe_rule_check(rule, facts, status)
+                fired_rule_ids.add(rule.rule_id)
+                rows.append(
+                    {
+                        "User Interface": "-",
+                        "Fakta Baru": "-",
+                        "Rule": rule_text,
+                        "Working Memory": _format_working_memory(facts, memory_order),
+                    }
+                )
+                continue
+
+            if existing_value == target_value:
+                status = "ALREADY_TRUE"
+                rule_text = _describe_rule_check(rule, facts, status)
+                fired_rule_ids.add(rule.rule_id)
+                rows.append(
+                    {
+                        "User Interface": "-",
+                        "Fakta Baru": "-",
+                        "Rule": rule_text,
+                        "Working Memory": _format_working_memory(facts, memory_order),
+                    }
+                )
+                continue
+
+            status = "FIRED"
+            rule_text = _describe_rule_check(rule, facts, status)
+            facts[target_fact] = target_value
+            if target_fact not in memory_order:
+                memory_order.append(target_fact)
+            fired_rule_ids.add(rule.rule_id)
+            changed = True
+            rows.append(
+                {
+                    "User Interface": "-",
+                    "Fakta Baru": f"{target_fact}={target_value}",
+                    "Rule": rule_text,
+                    "Working Memory": _format_working_memory(facts, memory_order),
+                }
+            )
+
+    return rows
 
 
 def _build_inference_flowchart(initial_facts: dict[str, str], output) -> str:
@@ -460,30 +599,12 @@ else:
         with st.expander("Lihat Alur Inferensi (Graphviz)"):
             st.graphviz_chart(_build_inference_flowchart(answers, output), use_container_width=True)
 
-        st.markdown('<div class="section-title">History Forward Chaining (Lengkap)</div>', unsafe_allow_html=True)
-        audit_rows = []
-        iter_counters: dict[int, int] = {}
-        for check in output.result.rule_checks:
-            iter_counters[check.iteration] = iter_counters.get(check.iteration, 0) + 1
-            order = iter_counters[check.iteration]
-            cond = " AND ".join([f"{k}={v}" for k, v in check.conditions.items()])
-            concl_key, concl_value = check.conclusion
-            missing = ", ".join(check.missing) if check.missing else "-"
-            new_fact = f"{concl_key}={concl_value}" if check.status == "FIRED" else "-"
-            audit_rows.append(
-                {
-                    "Iterasi": check.iteration,
-                    "Urutan": order,
-                    "Rule": check.rule_id,
-                    "Status": STATUS_LABELS.get(check.status, check.status),
-                    "Kondisi": cond,
-                    "Kesimpulan": f"{concl_key}={concl_value}",
-                    "Fakta Baru": new_fact,
-                    "Tidak Terpenuhi": missing,
-                    "Keterangan": check.description,
-                }
-            )
-        st.dataframe(audit_rows, use_container_width=True, hide_index=True)
+        st.markdown(
+            '<div class="section-title">History Forward Chaining (Lengkap)</div>',
+            unsafe_allow_html=True,
+        )
+        full_rows = _build_full_history_rows(answers)
+        st.dataframe(full_rows, use_container_width=True, hide_index=True)
 
         if output.result.conflicts:
             st.markdown('<div class="section-title">Peringatan Konflik</div>', unsafe_allow_html=True)
